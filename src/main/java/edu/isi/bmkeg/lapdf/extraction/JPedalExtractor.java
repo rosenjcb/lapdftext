@@ -93,7 +93,7 @@ public class JPedalExtractor implements Extractor {
 		} else if (pdfDecoder.isEncrypted()) {
 			throw new EncryptionException(file.getPath());
 		}
-
+		
 	}
 
 	private int[] generatePageBoundaries(PdfPageData currentPageData) throws PdfException {
@@ -159,7 +159,8 @@ public class JPedalExtractor implements Extractor {
 		pdfDecoder.decodePage(currentPage);
 		
 		PdfGroupingAlgorithms currentGrouping = pdfDecoder.getGroupingObject();
-
+		currentGrouping.useUnrotatedCoords = false;
+		
 		PdfPageData currentPageData = pdfDecoder.getPdfPageData();
 		int[] dimensions;
 
@@ -252,6 +253,40 @@ public class JPedalExtractor implements Extractor {
 			
 			wordListPerPage.add(wordBlock);
 			i++;
+
+		}
+		
+		IntegerFrequencyCounter hFreq = new IntegerFrequencyCounter(1);
+		IntegerFrequencyCounter wFreq = new IntegerFrequencyCounter(1);
+		for( WordBlock wb : wordListPerPage) {
+			hFreq.add(wb.getHeight());
+			wFreq.add(wb.getWidth());
+		}
+		
+		//
+		// If this condition is true then the page is probably turned on it's side.
+		//
+		if( wFreq.getCount(wFreq.getMostPopular()) > 
+				hFreq.getCount(hFreq.getMostPopular()) ) {
+			
+			WordBlock[] wbArray = wordListPerPage.toArray(new WordBlock[wordListPerPage.size()]);
+			wordListPerPage.clear();
+			for(int j=0; j<wbArray.length; j++){
+				WordBlock wb = wbArray[j];
+				
+				int x1 = pageHeight - wb.getY2();
+				int y1 = wb.getX1();
+				int x2 = pageHeight - wb.getY1();
+				int y2 = wb.getX2();
+				
+				WordBlock wordBlock = modelFactory.createWordBlock(
+						x1, y1, x2, y2, 
+						1, wb.getFont(), wb.getFontStyle(), wb.getWord(), j);
+				wordListPerPage.add(wordBlock);
+			}
+
+			pageHeight = Math.abs(dimensions[2] - dimensions[0]);
+			pageWidth = Math.abs(dimensions[1] - dimensions[3]);
 
 		}
 		

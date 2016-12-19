@@ -458,7 +458,6 @@ public class RuleBasedParser implements Parser {
 				new LinkedBlockingQueue<WordBlock>();
 		
 		List<WordBlock> chunkWords = new ArrayList<WordBlock>();
-		List<WordBlock> rotatedWords = new ArrayList<WordBlock>();
 		int counter;
 		List<ChunkBlock> chunkBlockList1 = new ArrayList<ChunkBlock>();
 		
