@@ -24,13 +24,13 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 	private int mostPopularWordSpaceWidth;
 	private String mostPopularWordFont = "";
 	private String mostPopularWordStyle = "";
-	
+
 	private String alignment = null;
 	private String type = ChunkBlock.TYPE_UNCLASSIFIED;
-	private Boolean headerOrFooter=null;
-	
+	private Boolean headerOrFooter = null;
+
 	private double density = -1;
-	
+
 	private List<WordBlock> rotatedWords = new ArrayList<WordBlock>();
 
 	public RTChunkBlock() {
@@ -40,7 +40,7 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 	public RTChunkBlock(int x1, int y1, int x2, int y2, int order) {
 		super(x1, y1, x2, y2, order);
 	}
-	
+
 	@Override
 	public int getId() {
 		return super.getId();
@@ -84,7 +84,7 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 
 	@Override
 	public void setMostPopularWordStyle(String style) {
-		this.mostPopularWordStyle=style;
+		this.mostPopularWordStyle = style;
 	}
 
 	@Override
@@ -94,14 +94,14 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 
 	@Override
 	public void setHeaderOrFooter(boolean headerOrFooter) {
-		this.headerOrFooter=headerOrFooter;
+		this.headerOrFooter = headerOrFooter;
 	}
-	
+
 	@Override
 	public void setContainer(Block block) {
 		this.container = (PageBlock) block;
 	}
-	
+
 	@Override
 	public PageBlock getPage() {
 		return (PageBlock) this.container;
@@ -111,7 +111,7 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 	public void setPage(PageBlock page) {
 		this.container = page;
 	}
-	
+
 	@Override
 	public String getType() {
 		return type;
@@ -121,7 +121,7 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 	public void setType(String type) {
 		this.type = type;
 	}
-	
+
 	public List<WordBlock> getRotatedWords() {
 		return rotatedWords;
 	}
@@ -130,44 +130,42 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 		this.rotatedWords = rotatedWords;
 	}
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	@Override
 	public String readLeftRightMidLine() {
-		
+
 		if (this.alignment != null)
 			return this.alignment;
-		
+
 		PageBlock page = (PageBlock) this.getContainer();
 		int median = page.getMedian();
 		int X1 = this.getX1();
 		int width = this.getWidth();
 
-		if ( X1 + width < median ) {
-		
-			this.alignment = LEFT;	
-		
+		if (X1 + width < median) {
+
+			this.alignment = LEFT;
+
 		} else if (X1 > median) {
 
 			this.alignment = RIGHT;
-		
-		} else {
-		
-			/*int left = median - X1;
-			int right = X1 + width - median;
 
-			double leftIsToRight = (double) left / (double) right;
-			double rightIsToLeft = (double) right / (double) left;
-			if (leftIsToRight < 0.05)
-				this.alignment = RIGHT;
-			else if (rightIsToLeft < 0.05)
-				this.alignment = LEFT;
-			else*/
-				this.alignment = MIDLINE;
+		} else {
+
+			/*
+			 * int left = median - X1; int right = X1 + width - median;
+			 * 
+			 * double leftIsToRight = (double) left / (double) right; double
+			 * rightIsToLeft = (double) right / (double) left; if (leftIsToRight
+			 * < 0.05) this.alignment = RIGHT; else if (rightIsToLeft < 0.05)
+			 * this.alignment = LEFT; else
+			 */
+			this.alignment = MIDLINE;
 		}
-			
+
 		return this.alignment;
-	
+
 	}
 
 	public boolean isFlush(String condition, int value) {
@@ -183,41 +181,32 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 		if (condition.equals(MIDLINE)) {
 			if (leftRightMidline.equals(MIDLINE))
 				return false;
-			else if (leftRightMidline.equals(LEFT)
-					&& Math.abs(x2 - median) < value)
+			else if (leftRightMidline.equals(LEFT) && Math.abs(x2 - median) < value)
 				return true;
-			else if (leftRightMidline.equals(RIGHT)
-					&& Math.abs(x1 - median) < value)
+			else if (leftRightMidline.equals(RIGHT) && Math.abs(x1 - median) < value)
 				return true;
 		} else if (condition.equals(LEFT)) {
-			if (leftRightMidline.equals(MIDLINE)
-					&& Math.abs(x1 - marginX1) < value)
+			if (leftRightMidline.equals(MIDLINE) && Math.abs(x1 - marginX1) < value)
 				return true;
-			else if (leftRightMidline.equals(LEFT)
-					&& Math.abs(x1 - marginX1) < value)
+			else if (leftRightMidline.equals(LEFT) && Math.abs(x1 - marginX1) < value)
 				return true;
 			else if (leftRightMidline.equals(RIGHT))
 				return false;
 		} else if (condition.equals(RIGHT)) {
-			if (leftRightMidline.equals(MIDLINE)
-					&& Math.abs(x2 - marginX2) < value)
+			if (leftRightMidline.equals(MIDLINE) && Math.abs(x2 - marginX2) < value)
 				return true;
 			else if (leftRightMidline.equals(LEFT))
 				return false;
-			else if (leftRightMidline.equals(RIGHT)
-					&& Math.abs(x2 - marginX2) < value)
+			else if (leftRightMidline.equals(RIGHT) && Math.abs(x2 - marginX2) < value)
 				return true;
 		}
 		return false;
 	}
 
-
-
 	@Override
 	public int readNumberOfLine() {
 		PageBlock parent = (PageBlock) this.container;
-		List<SpatialEntity> wordBlockList = parent.containsByType(this,
-				SpatialOrdering.MIXED_MODE, WordBlock.class);
+		List<SpatialEntity> wordBlockList = parent.containsByType(this, SpatialOrdering.MIXED_MODE, WordBlock.class);
 		if (wordBlockList.size() == 0)
 			return 0;
 		WordBlock block = (WordBlock) wordBlockList.get(0);
@@ -237,32 +226,30 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 
 	@Override
 	public String readChunkText() {
-		
-		List<SpatialEntity> wordBlockList = ((PageBlock) container)
-				.containsByType(this, SpatialOrdering.MIXED_MODE,
-						WordBlock.class);
-		
+
+		List<SpatialEntity> wordBlockList = ((PageBlock) container).containsByType(this, SpatialOrdering.MIXED_MODE,
+				WordBlock.class);
+
 		StringBuilder builder = new StringBuilder();
 		for (SpatialEntity entity : wordBlockList) {
-			builder.append( ((WordBlock) entity).getWord() );
+			builder.append(((WordBlock) entity).getWord());
 
-			if( ((WordBlock) entity).getWord() == null )
+			if (((WordBlock) entity).getWord() == null)
 				continue;
-			
-			if( !((WordBlock) entity).getWord().endsWith("-") )
+
+			if (!((WordBlock) entity).getWord().endsWith("-"))
 				builder.append(" ");
 
 		}
-		
+
 		return builder.toString().trim();
 
 	}
-	
+
 	@Override
 	public ChunkBlock readLastChunkBlock() {
-		
-		List<ChunkBlock> sortedChunkBlockList = ((PageBlock) this
-				.getContainer())
+
+		List<ChunkBlock> sortedChunkBlockList = ((PageBlock) this.getContainer())
 				.getAllChunkBlocks(SpatialOrdering.MIXED_MODE);
 
 		int index = Collections.binarySearch(sortedChunkBlockList, this,
@@ -270,9 +257,11 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 
 		return (index <= 0) ? null : sortedChunkBlockList.get(index - 1);
 	}
-	
+
 	/**
-	 * returns true if the chunk block contains text that matches the input regex
+	 * returns true if the chunk block contains text that matches the input
+	 * regex
+	 * 
 	 * @param regex
 	 * @return
 	 */
@@ -282,65 +271,59 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 
 		String text = this.readChunkText();
 		Matcher matcher = pattern.matcher(text);
-		
+
 		if (matcher.find())
 			return true;
 
 		return false;
 	}
-		
+
 	/**
-	 * returns true if chunk block has neighbors of specific type within specified distance
+	 * returns true if chunk block has neighbors of specific type within
+	 * specified distance
+	 * 
 	 * @param type
 	 * @param nsew
 	 * @return
 	 */
 	@Override
 	public boolean hasNeighboursOfType(String type, int nsew) {
-		
-		List<ChunkBlock> list = getOverlappingNeighbors(nsew, 
-				(PageBlock) this.getContainer(), 
-				(ChunkBlock) this);
-		
+
+		List<ChunkBlock> list = getOverlappingNeighbors(nsew, (PageBlock) this.getContainer(), (ChunkBlock) this);
+
 		for (ChunkBlock chunky : list)
 			if (chunky.getType().equalsIgnoreCase(type))
 				return true;
 
 		return false;
-	
+
 	}
 
 	@Override
 	public boolean isUnderOneLineFlushNeighboursOfType(String type) {
-		
-		List<ChunkBlock> list = getOverlappingNeighbors(LapdfDirection.NORTH, 
-				(PageBlock) this.getContainer(), 
+
+		List<ChunkBlock> list = getOverlappingNeighbors(LapdfDirection.NORTH, (PageBlock) this.getContainer(),
 				(ChunkBlock) this);
-		
+
 		double threshold = this.getMostPopularWordHeight() * 2;
-		
+
 		for (ChunkBlock chunky : list) {
-			
+
 			int delta1 = Math.abs(chunky.getX1() - this.getX1());
 			int delta2 = Math.abs(chunky.getX2() - this.getX2());
-			
-			if( delta1 < threshold
-					&& delta2 < threshold 
-					&& chunky.readNumberOfLine() == 1 
+
+			if (delta1 < threshold && delta2 < threshold && chunky.readNumberOfLine() == 1
 					&& chunky.getType().equalsIgnoreCase(type)) {
 				return true;
 			}
 		}
-		
+
 		return false;
-	
+
 	}
 
-	public List<ChunkBlock> getOverlappingNeighbors(
-			int nsew, 
-			PageBlock parent,
-			ChunkBlock chunkBlock) {
-		
+	public List<ChunkBlock> getOverlappingNeighbors(int nsew, PageBlock parent, ChunkBlock chunkBlock) {
+
 		int topX = chunkBlock.getX1();
 		int topY = chunkBlock.getY1();
 		int width = chunkBlock.getWidth();
@@ -367,51 +350,52 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 
 		}
 
-		SpatialEntity entity = new RTChunkBlock(topX, topY, topX
-				+ width, topY + height, -1);
+		SpatialEntity entity = new RTChunkBlock(topX, topY, topX + width, topY + height, -1);
 
-		List<ChunkBlock> l = new ArrayList<ChunkBlock>();		
-		 Iterator<SpatialEntity> it = parent.intersectsByType(
-				 entity, null, ChunkBlock.class).iterator();
-		 while( it.hasNext() ) {
-			 l.add((ChunkBlock)it.next());
-		 }
+		List<ChunkBlock> l = new ArrayList<ChunkBlock>();
+		Iterator<SpatialEntity> it = parent.intersectsByType(entity, null, ChunkBlock.class).iterator();
+		while (it.hasNext()) {
+			l.add((ChunkBlock) it.next());
+		}
 
-		 return l;
-		 
+		return l;
+
 	}
-	
-	
-	/** 
-	 * Iterate reading box in the desired direction nearest dense, 
-	 * long block or leave the page.
+
+	public ChunkBlock readNearestNeighborChunkBlock(int nsew) throws Exception {
+		return readNearestNeighborChunkBlock(nsew, 0); 
+	}
+
+	/**
+	 * Iterate reading box in the desired direction nearest dense, long block or
+	 * leave the page.
 	 * 
 	 * @param nsew
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public ChunkBlock readNearestNeighborChunkBlock(int nsew) throws Exception {
-		
+	public ChunkBlock readNearestNeighborChunkBlock(int nsew, int nWordsMinimum) throws Exception {
+
 		int x = this.getX1();
 		int y = this.getY1();
 		int w = this.getWidth();
 		int h = this.getHeight();
 		int dx = 0, dy = 0;
-		
+
 		if (nsew == LapdfDirection.NORTH) {
-			
+
 			h = 10;
 			y = y - h - 1;
 			dy = -h;
-			
+
 		} else if (nsew == LapdfDirection.SOUTH) {
-		
+
 			y = y + h + 1;
 			h = 10;
 			dy = h;
-					
+
 		} else if (nsew == LapdfDirection.EAST) {
-		
+
 			x = x + w + 1;
 			w = 10;
 			dx = w;
@@ -421,85 +405,125 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 			w = 10;
 			x = x - w - 1;
 			dx = -w;
-		
+
 		} else {
-			
+
 			throw new Exception("NearestNeighborChunkBlock only works with North/South/East/West");
 
 		}
 
-		SpatialEntity entity = new RTChunkBlock(
-				x, y, x + w, y + h, -1);
-		List<SpatialEntity> list = this.getPage().intersectsByType(
-				entity, null, ChunkBlock.class);
+		SpatialEntity entity = new RTChunkBlock(x, y, x + w, y + h, -1);
+		List<SpatialEntity> list = this.getPage().intersectsByType(entity, null, ChunkBlock.class);
 		list.remove(this);
-		
+		removeShortChunks(nWordsMinimum, list);
+		removeLowDensity(0.5, list);
+
 		/*
-		 * margin[0] = (int) marginRect.minX;
-		 * margin[1] = (int) marginRect.minY;
-		 * margin[2] = (int) marginRect.maxX;
-		 * margin[3] = (int) marginRect.maxY;
+		 * margin[0] = (int) marginRect.minX; margin[1] = (int) marginRect.minY;
+		 * margin[2] = (int) marginRect.maxX; margin[3] = (int) marginRect.maxY;
 		 */
 		int[] margins = this.getPage().getMargin();
-		
-		while( list.size() == 0  && 
-				entity.getX1() >= margins[0]-2 &&
-				entity.getY1() >= margins[1]-2 &&
-				entity.getX2() <= margins[2]+2 &&
-				entity.getY2() <= margins[3]+2 ) {
-			
+
+		while (list.size() == 0 &&
+				entity.getX1() >= margins[0] - 2 && 
+				entity.getY1() >= margins[1] - 2 && 
+				entity.getX2() <= margins[2] + 2 && 
+				entity.getY2() <= margins[3] + 2) {
+
 			x += dx;
 			y += dy;
 			entity = new RTChunkBlock(x, y, x + w, y + h, -1);
-
+			
 			list = this.getPage().intersectsByType(entity, null, ChunkBlock.class);
 			list.remove(this);
 			
-			System.out.println(x + "," + y + "," + (x+w) + "," + (y+h));
-			
+			removeShortChunks(nWordsMinimum, list);
+			removeLowDensity(0.5, list);
+
+
+			System.out.println(x + "," + y + "," + (x + w) + "," + (y + h));
+
 		}
-		
+
 		ChunkBlock nn = null;
-		for( SpatialEntity se : list) {
+		for (SpatialEntity se : list) {
 			nn = (ChunkBlock) se;
 			break;
 		}
-		
+
 		return nn;
-						 
+
+	}
+
+	private void removeShortChunks(int nWordsMinimum, List<SpatialEntity> list) {
+		List<SpatialEntity> toRemove = new ArrayList<SpatialEntity>();
+		for (SpatialEntity se : list) {
+			ChunkBlock candidate = (ChunkBlock) se;
+			List<SpatialEntity> wordsInBlock = ((PageBlock) candidate.getPage()).containsByType(candidate, 
+					SpatialOrdering.MIXED_MODE,WordBlock.class);
+			if(wordsInBlock.size() < nWordsMinimum)
+				toRemove.add(candidate);
+		}
+		list.removeAll(toRemove);
+	}
+
+	private void removeLowDensity(double density, List<SpatialEntity> list) {
+		List<SpatialEntity> toRemove = new ArrayList<SpatialEntity>();
+		for (SpatialEntity se : list) {
+			ChunkBlock candidate = (ChunkBlock) se;
+			if(candidate.readDensity() < density)
+				toRemove.add(candidate);
+		}
+		list.removeAll(toRemove);
 	}
 	
 	@Override
 	public double readDensity() {
-		
-		if( this.density < 0.0 ) {
-	
+
+		if (this.density < 0.0) {
+
 			PageBlock page = (PageBlock) this.getContainer();
-			List<SpatialEntity> wordBlockList = page.containsByType(this,
-					SpatialOrdering.MIXED_MODE, 
-					WordBlock.class);
+			List<SpatialEntity> wordBlockList = page.containsByType(this, SpatialOrdering.MIXED_MODE, WordBlock.class);
 			double chunkSize = this.width() * this.height();
 			double wordCoverage = 0.0;
 			for (int i = 0; i < wordBlockList.size(); i++) {
 				WordBlock wordBlock = (WordBlock) wordBlockList.get(i);
 				wordCoverage += wordBlock.getHeight() * wordBlock.getWidth();
 			}
-				
+
 			this.density = wordCoverage / chunkSize;
-			
+
 		}
 
 		return this.density;
-		
+
 	}
-	
-	/* Need to implement these functions 
-	 * to handle issues with serialization
-	 private void writeObject(java.io.ObjectOutputStream out)
-		     throws IOException
-		 private void readObject(java.io.ObjectInputStream in)
-		     throws IOException, ClassNotFoundException;
-		 private void readObjectNoData() 
-		     throws ObjectStreamException;*/
+
+	/*
+	 * Need to implement these functions to handle issues with serialization
+	 * private void writeObject(java.io.ObjectOutputStream out) throws
+	 * IOException private void readObject(java.io.ObjectInputStream in) throws
+	 * IOException, ClassNotFoundException; private void readObjectNoData()
+	 * throws ObjectStreamException;
+	 */
+
+	public List<ChunkBlock> getOverlappingChunks(PageBlock parent) {
+
+		int topX = this.getX1();
+		int topY = this.getY1();
+		int width = this.getWidth();
+		int height = this.getHeight();
+
+		SpatialEntity entity = new RTChunkBlock(topX, topY, topX + width, topY + height, -1);
+
+		List<ChunkBlock> l = new ArrayList<ChunkBlock>();
+		Iterator<SpatialEntity> it = parent.intersectsByType(entity, null, ChunkBlock.class).iterator();
+		while (it.hasNext()) {
+			l.add((ChunkBlock) it.next());
+		}
+
+		return l;
+
+	}
 
 }

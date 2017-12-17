@@ -85,20 +85,29 @@ public class ExtractFigureImagesFromDirectory {
 				newPath = newPath.substring(0, newPath.indexOf(".pdf"));
 				String stem = pdf.getName().substring(0,pdf.getName().length()-4);
 				File newDir = new File(newPath);
+				
+				if( newDir.exists() ) {
+					continue;
+				}
 				newDir.mkdirs();
 				
-				Map<String, BufferedImage> imageList = eng.extractFiguresFromArticle(
-						pdf
-						);
-			
-				for(String name : imageList.keySet()) {
-	
-					BufferedImage img = imageList.get(name);
-					File outputfile = new File(newPath + "/" + stem + "_fig_" + name + ".png");
-					ImageIO.write(img, "png", outputfile);
-	
-					logger.info("Extracting image to " + outputfile.getPath());
+				try {
+					Map<String, BufferedImage> imageList = eng.extractFiguresFromArticle(pdf);
 					
+					List<String> keys = new ArrayList<String>(imageList.keySet());
+					Collections.sort(keys);
+					for(String name : keys) {
+
+						BufferedImage img = imageList.get(name);
+						File outputfile = new File(newPath + "/" + stem + "_fig_" + name + ".png");
+						ImageIO.write(img, "png", outputfile);
+
+						logger.info("Extracting image to " + outputfile.getPath());
+						
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			
 			}

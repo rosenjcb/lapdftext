@@ -1,7 +1,13 @@
 package edu.isi.bmkeg.lapdf.controller;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,7 +16,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,6 +39,7 @@ import edu.isi.bmkeg.lapdf.model.ChunkBlock;
 import edu.isi.bmkeg.lapdf.model.LapdfDirection;
 import edu.isi.bmkeg.lapdf.model.LapdfDocument;
 import edu.isi.bmkeg.lapdf.model.PageBlock;
+import edu.isi.bmkeg.lapdf.model.WordBlock;
 import edu.isi.bmkeg.lapdf.model.RTree.RTChunkBlock;
 import edu.isi.bmkeg.lapdf.model.RTree.RTModelFactory;
 import edu.isi.bmkeg.lapdf.model.factory.AbstractModelFactory;
@@ -852,35 +858,34 @@ public class LapdfEngine {
 					RTChunkBlock rt = (RTChunkBlock) c;
 					SpatialEntity imageRect = null;
 
-					int[] margins = rt.getPage().getMargin();
+					//int[] margins = rt.getPage().getMargin();
 
 					// distance in each direction
 					// aggregated to a list:
 					List<Integer> distances = new ArrayList<Integer>();
-					int disNorth = rt.getY1() - margins[1];
+					int disNorth = rt.getY1();
 					ChunkBlock north = rt
-							.readNearestNeighborChunkBlock(LapdfDirection.NORTH);
+							.readNearestNeighborChunkBlock(LapdfDirection.NORTH, 30);
 					if (north != null)
 						disNorth = rt.getY1() - north.getY2();
 					distances.add(disNorth);
 
-					int disSouth = margins[3] - rt.getY2();
+					int disSouth = rt.getPage().getPageBoxHeight() - rt.getY2();
 					ChunkBlock south = rt
-							.readNearestNeighborChunkBlock(LapdfDirection.SOUTH);
+							.readNearestNeighborChunkBlock(LapdfDirection.SOUTH, 30);
 					if (south != null)
 						disSouth = south.getY1() - rt.getY2();
 					distances.add(disSouth);
-
-					int disEast = margins[2] - rt.getX2();
+					int disEast = rt.getPage().getPageBoxWidth() - rt.getX2();
 					ChunkBlock east = rt
-							.readNearestNeighborChunkBlock(LapdfDirection.EAST);
+							.readNearestNeighborChunkBlock(LapdfDirection.EAST, 30);
 					if (east != null)
 						disEast = east.getX1() - rt.getX2();
 					distances.add(disEast);
 
-					int disWest = rt.getX1() - margins[0];
+					int disWest = rt.getX1();
 					ChunkBlock west = rt
-							.readNearestNeighborChunkBlock(LapdfDirection.WEST);
+							.readNearestNeighborChunkBlock(LapdfDirection.WEST, 30);
 					if (west != null)
 						disWest = rt.getX1() - west.getX2();
 					distances.add(disWest);
@@ -888,28 +893,54 @@ public class LapdfEngine {
 					imageRect = new RTChunkBlock(rt.getX1() - disWest,
 							rt.getY1() - disNorth, rt.getX2() + disEast,
 							rt.getY2() + disSouth, -1);
-
+					
 					if (imageRect != null) {
-
+												
 						int p = rt.getPage().getPageNumber() - 1;
 						BufferedImage img = (BufferedImage) pageImages.get(p);
+						BufferedImage copy = deepCopy(img);
 
 						double sf = img.getHeight()
 								/ (rt.getPage().getPageBoxHeight());
 
-						BufferedImage subImg = img
-								.getSubimage(
-										(new Double(imageRect.getX1() * sf))
-												.intValue() - 2, (new Double(
-												imageRect.getY1() * sf))
-												.intValue() - 2, (new Double(
-												imageRect.getWidth() * sf))
-												.intValue() + 4, (new Double(
-												imageRect.getHeight() * sf))
-												.intValue() + 4);
-
+						int x = (new Double(imageRect.getX1() * sf)).intValue();
+						int y = (new Double(imageRect.getY1() * sf)).intValue();
+						int w = (new Double(imageRect.getWidth() * sf)).intValue();
+						int h = (new Double(imageRect.getHeight() * sf)).intValue();
+						
+						BufferedImage subImg = 
+								img.getSubimage( x, y, w, h );
+						
+						for( ChunkBlock cb : rt.getOverlappingChunks(rt.getPage())) {
+							for( SpatialEntity wordBlock : ((PageBlock) rt.getPage()).containsByType(cb, 
+												SpatialOrdering.MIXED_MODE,WordBlock.class) ) { 
+								
+								int wb_x = (new Double(wordBlock.getX1() * sf)).intValue();
+								int wb_y = (new Double(wordBlock.getY1() * sf)).intValue();
+								int wb_w = (new Double(wordBlock.getWidth() * sf)).intValue();
+								int wb_h = (new Double(wordBlock.getHeight() * sf)).intValue();
+								Graphics2D graph = subImg.createGraphics();
+								graph.setColor(Color.WHITE);
+						        graph.fill(new Rectangle(wb_x-x-15, wb_y-y, wb_w+30, wb_h));
+						        graph.dispose();
+		
+							}
+						}
+						
+						drawSpatialEntityOnImage(copy, imageRect, sf, Color.RED, 4.0f);
+						if( north != null ) 
+							drawSpatialEntityOnImage(copy, north, sf, Color.RED, 1.0f);
+						else if( south != null ) 
+							drawSpatialEntityOnImage(copy, south, sf, Color.RED, 1.0f);
+						else if( east != null ) 
+							drawSpatialEntityOnImage(copy, east, sf, Color.RED, 1.0f);
+						else if( west != null ) 
+							drawSpatialEntityOnImage(copy, west, sf, Color.RED, 1.0f);
+						
+						imageList.put(m.group(2) + "__page", copy);
 						imageList.put(m.group(2), subImg);
 
+						
 					} else {
 
 						logger.info("Can't find image.");
@@ -927,5 +958,30 @@ public class LapdfEngine {
 		return imageList;
 
 	}
+	
+	static void drawSpatialEntityOnImage(BufferedImage bi,
+			SpatialEntity se, double sf, 
+			Color color, float stroke ) {
+		
+		int x = (new Double(se.getX1() * sf)).intValue();
+		int y = (new Double(se.getY1() * sf)).intValue();
+		int w = (new Double(se.getWidth() * sf)).intValue();
+		int h = (new Double(se.getHeight() * sf)).intValue();
+		
+		Graphics2D graph = bi.createGraphics();
+        graph.setColor(color);
+        graph.setStroke(new BasicStroke(stroke));
+        graph.draw(new Rectangle(x+2, y+2, w-4, h-4));
+        graph.dispose();
+        
+	}
+	
+	
+	static BufferedImage deepCopy(BufferedImage bi) {
+		 ColorModel cm = bi.getColorModel();
+		 boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+		 WritableRaster raster = bi.copyData(null);
+		 return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+		}
 
 }
