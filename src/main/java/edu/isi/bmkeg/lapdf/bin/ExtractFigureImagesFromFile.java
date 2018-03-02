@@ -75,20 +75,8 @@ public class ExtractFigureImagesFromFile {
 			parser.parseArgument(args);
 
 			LapdfEngine eng = new LapdfEngine();
-			Map<String, BufferedImage> imageList = eng.extractFiguresFromArticle(options.pdf);
 			
-			for(String name : imageList.keySet()) {
-
-				BufferedImage img = imageList.get(name);
-				File outputfile = new File(options.outdir + "/"
-						+ options.stem + "_" + name + ".png");
-				ImageIO.write(img, "png", outputfile);
-
-				logger.info("Extracting image to " + options.outdir
-						+ "/" + options.stem + "_" + name
-						+ ".png");
-				
-			}
+			eng.extractFiguresFromArticle(options.pdf, options.outdir, options.stem);					
 
 		} catch (CmdLineException e) {
 

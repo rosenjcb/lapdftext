@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -25,10 +26,15 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.imageio.ImageIO;
+
 import org.apache.log4j.Logger;
 import org.ghost4j.document.PDFDocument;
 import org.ghost4j.renderer.SimpleRenderer;
 import org.jpedal.exception.PdfException;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import edu.isi.bmkeg.lapdf.classification.ruleBased.RuleBasedChunkClassifier;
 import edu.isi.bmkeg.lapdf.extraction.exceptions.AccessException;
@@ -833,12 +839,13 @@ public class LapdfEngine {
 
 	}
 
-	public Map<String, BufferedImage> extractFiguresFromArticle(File pdf)
+	public void extractFiguresFromArticle(File pdf, File outDir, String stem)
 			throws Exception {
 
 		Pattern patt = Pattern.compile("^(Figure|Fig\\.{0,1})\\s+(\\d+)");
 
 		LapdfDocument doc = this.blockifyFile(pdf);
+		SpatialEntity frame = doc.getBodyTextFrame();
 
 		Map<String, BufferedImage> imageList = new HashMap<String, BufferedImage>();
 
@@ -863,27 +870,28 @@ public class LapdfEngine {
 					// distance in each direction
 					// aggregated to a list:
 					List<Integer> distances = new ArrayList<Integer>();
-					int disNorth = rt.getY1();
+					int disNorth = rt.getY1() - frame.getY1();
 					ChunkBlock north = rt
 							.readNearestNeighborChunkBlock(LapdfDirection.NORTH, 30);
 					if (north != null)
 						disNorth = rt.getY1() - north.getY2();
 					distances.add(disNorth);
 
-					int disSouth = rt.getPage().getPageBoxHeight() - rt.getY2();
+					int disSouth = frame.getY2() - rt.getY2();
 					ChunkBlock south = rt
 							.readNearestNeighborChunkBlock(LapdfDirection.SOUTH, 30);
 					if (south != null)
 						disSouth = south.getY1() - rt.getY2();
 					distances.add(disSouth);
-					int disEast = rt.getPage().getPageBoxWidth() - rt.getX2();
+					
+					int disEast = frame.getX2() - rt.getX2();
 					ChunkBlock east = rt
 							.readNearestNeighborChunkBlock(LapdfDirection.EAST, 30);
 					if (east != null)
 						disEast = east.getX1() - rt.getX2();
 					distances.add(disEast);
 
-					int disWest = rt.getX1();
+					int disWest = rt.getX1() - frame.getX1();
 					ChunkBlock west = rt
 							.readNearestNeighborChunkBlock(LapdfDirection.WEST, 30);
 					if (west != null)
@@ -895,7 +903,7 @@ public class LapdfEngine {
 							rt.getY2() + disSouth, -1);
 					
 					if (imageRect != null) {
-												
+								
 						int p = rt.getPage().getPageNumber() - 1;
 						BufferedImage img = (BufferedImage) pageImages.get(p);
 						BufferedImage copy = deepCopy(img);
@@ -911,35 +919,82 @@ public class LapdfEngine {
 						BufferedImage subImg = 
 								img.getSubimage( x, y, w, h );
 						
-						for( ChunkBlock cb : rt.getOverlappingChunks(rt.getPage())) {
-							for( SpatialEntity wordBlock : ((PageBlock) rt.getPage()).containsByType(cb, 
-												SpatialOrdering.MIXED_MODE,WordBlock.class) ) { 
+						for( SpatialEntity wordBlock : ((PageBlock) rt.getPage()).containsByType(
+								c, SpatialOrdering.MIXED_MODE,WordBlock.class) ) { 
 								
-								int wb_x = (new Double(wordBlock.getX1() * sf)).intValue();
-								int wb_y = (new Double(wordBlock.getY1() * sf)).intValue();
-								int wb_w = (new Double(wordBlock.getWidth() * sf)).intValue();
-								int wb_h = (new Double(wordBlock.getHeight() * sf)).intValue();
-								Graphics2D graph = subImg.createGraphics();
-								graph.setColor(Color.WHITE);
-						        graph.fill(new Rectangle(wb_x-x-15, wb_y-y, wb_w+30, wb_h));
-						        graph.dispose();
-		
+							int wb_x = (new Double(wordBlock.getX1() * sf)).intValue();
+							int wb_y = (new Double(wordBlock.getY1() * sf)).intValue();
+							int wb_w = (new Double(wordBlock.getWidth() * sf)).intValue();
+							int wb_h = (new Double(wordBlock.getHeight() * sf)).intValue();
+							Graphics2D graph = subImg.createGraphics();
+							graph.setColor(Color.WHITE);
+					        graph.fill(new Rectangle(wb_x-x-15, wb_y-y, wb_w+30, wb_h));
+					        graph.dispose();
+	
+						}
+						
+						//
+						// Run through all words in chunk to see if any are left over from image.
+						//
+						List<SpatialEntity> wordsInBlock = ((PageBlock) rt.getPage()).containsByType(
+								imageRect, SpatialOrdering.MIXED_MODE, WordBlock.class);
+						List<SpatialEntity> allWordsInCaption = ((PageBlock) c.getPage()).containsByType(
+								c, SpatialOrdering.MIXED_MODE, WordBlock.class);
+						wordsInBlock.removeAll(allWordsInCaption);
+						if( wordsInBlock.size() > 5 ) {							
+							List<Map<String,String>> outputData = new ArrayList<Map<String,String>>();
+							boolean greenLight = true;
+							for(SpatialEntity se: wordsInBlock) {
+								WordBlock wb = (WordBlock) se;
+								String ww = wb.getWord();
+								if( ww.equals("Page") || ww.equals("Vol") || ww.startsWith("http://") ) {
+									greenLight = false;
+									drawSpatialEntityOnImage(copy, wb, sf, Color.CYAN, 4.0f);
+									break;
+								}
+								Map<String,String> wbo = new HashMap<String,String>(); 
+								int wb_x = (new Double((wb.getX1()-imageRect.getX1()) * sf)).intValue();
+								int wb_y = (new Double((wb.getY1()-imageRect.getY1()) * sf)).intValue();
+								int wb_w = (new Double(wb.getWidth() * sf)).intValue();
+								int wb_h = (new Double(wb.getHeight() * sf)).intValue();
+								wbo.put("word", wb.getWord());
+								wbo.put("font", wb.getFont());
+								wbo.put("p","" +  wb.getPage().getPageNumber());
+								wbo.put("x","" +  wb_x);
+								wbo.put("y", "" + wb_y);
+								wbo.put("w", "" + wb_w);
+								wbo.put("h", "" + wb_h);
+								wbo.put("fontStyle", "" + wb.getFontStyle());
+								drawSpatialEntityOnImage(copy, wb, sf, Color.BLUE, 4.0f);
+								outputData.add(wbo);
+							}
+							if(greenLight){									
+								Gson gson = new GsonBuilder().setPrettyPrinting().create();
+								String json = gson.toJson(outputData);
+								File extraWordsFile = new File(outDir + "/" + stem + "_fig_" + m.group(2) + ".json");
+								PrintWriter out = new PrintWriter(new BufferedWriter(
+										new FileWriter(extraWordsFile, true)));
+								out.write(json);
+								out.close();
 							}
 						}
 						
+						drawSpatialEntityOnImage(copy, doc.getBodyTextFrame(), sf, Color.PINK, 4.0f);
 						drawSpatialEntityOnImage(copy, imageRect, sf, Color.RED, 4.0f);
 						if( north != null ) 
-							drawSpatialEntityOnImage(copy, north, sf, Color.RED, 1.0f);
+							drawSpatialEntityOnImage(copy, north, sf, Color.GREEN, 3.0f);
 						else if( south != null ) 
-							drawSpatialEntityOnImage(copy, south, sf, Color.RED, 1.0f);
+							drawSpatialEntityOnImage(copy, south, sf, Color.GREEN, 3.0f);
 						else if( east != null ) 
-							drawSpatialEntityOnImage(copy, east, sf, Color.RED, 1.0f);
+							drawSpatialEntityOnImage(copy, east, sf, Color.GREEN, 3.0f);
 						else if( west != null ) 
-							drawSpatialEntityOnImage(copy, west, sf, Color.RED, 1.0f);
-						
-						imageList.put(m.group(2) + "__page", copy);
-						imageList.put(m.group(2), subImg);
+							drawSpatialEntityOnImage(copy, west, sf, Color.GREEN, 3.0f);
 
+						File imgfile = new File(outDir + "/" + stem + "_fig_" + m.group(2) + ".png");
+						ImageIO.write(subImg, "png", imgfile);
+
+						File pagefile = new File(outDir + "/" + stem + "_fig_" + m.group(2) + "_page.png");
+						ImageIO.write(copy, "png", pagefile);
 						
 					} else {
 
@@ -954,8 +1009,6 @@ public class LapdfEngine {
 			}
 
 		}
-
-		return imageList;
 
 	}
 	

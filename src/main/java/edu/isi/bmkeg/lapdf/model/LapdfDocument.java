@@ -230,27 +230,36 @@ public class LapdfDocument implements Serializable {
 		while( pgIt.hasNext() ) {
 			PageBlock pg = pgIt.next();
 			
-			Iterator<WordBlock> wdIt = pg.getAllWordBlocks(SpatialOrdering.MIXED_MODE).iterator();
-			while( wdIt.hasNext() ) {
-				WordBlock wd = wdIt.next();
-
-				if( wd.getFont() == null || wd.getFontStyle() == null) 
+			for( ChunkBlock cb : pg.getAllChunkBlocks(SpatialOrdering.MIXED_MODE) ) {
+				
+				float approxLineCount = cb.getHeight() / cb.getMostPopularWordHeight();
+				if( approxLineCount < 1.9 ) 
 					continue;
 				
-				if( wd.getFont().equals(mpArray[0]) && 
-						wd.getFontStyle().equals(mpArray[1]) ) {
-				
-					if( wd.getX1() < x_min )
-						 x_min = wd.getX1();
-					if( wd.getX2() > x_max )
-						 x_max = wd.getX2();
-					if( wd.getY1() < y_min )
-						 y_min = wd.getY1();
-					if( wd.getY2() > y_max )
-						 y_max = wd.getY2();
-				
+				List<SpatialEntity> wordsInChunk = ((PageBlock) cb.getPage()).containsByType(
+						cb, SpatialOrdering.MIXED_MODE, WordBlock.class);
+				for( SpatialEntity se : wordsInChunk ) {
+					WordBlock wd = (WordBlock) se;
+
+					if( wd.getFont() == null || wd.getFontStyle() == null) 
+						continue;
+					
+					if( wd.getFont().equals(mpArray[0]) && 
+							wd.getFontStyle().equals(mpArray[1]) ) {
+					
+						if( wd.getX1() < x_min )
+							 x_min = wd.getX1();
+						if( wd.getX2() > x_max )
+							 x_max = wd.getX2();
+						if( wd.getY1() < y_min )
+							 y_min = wd.getY1();
+						if( wd.getY2() > y_max )
+							 y_max = wd.getY2();
+					
+					}
+					
 				}
-			
+				
 			}
 		
 		}

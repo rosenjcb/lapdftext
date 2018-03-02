@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import edu.isi.bmkeg.lapdf.model.Block;
 import edu.isi.bmkeg.lapdf.model.ChunkBlock;
 import edu.isi.bmkeg.lapdf.model.LapdfDirection;
+import edu.isi.bmkeg.lapdf.model.LapdfDocument;
 import edu.isi.bmkeg.lapdf.model.PageBlock;
 import edu.isi.bmkeg.lapdf.model.WordBlock;
 import edu.isi.bmkeg.lapdf.model.ordering.SpatialOrdering;
@@ -376,6 +377,13 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 	 */
 	public ChunkBlock readNearestNeighborChunkBlock(int nsew, int nWordsMinimum) throws Exception {
 
+		LapdfDocument doc = ((RTPageBlock) this.container).getDocument();
+		SpatialEntity frame = doc.getBodyTextFrame();
+		int frame_left = frame.getX1();
+		int frame_right = frame.getX2();
+		int frame_top = frame.getY1();
+		int frame_bottom = frame.getY2();
+		
 		int x = this.getX1();
 		int y = this.getY1();
 		int w = this.getWidth();
@@ -415,20 +423,15 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 		SpatialEntity entity = new RTChunkBlock(x, y, x + w, y + h, -1);
 		List<SpatialEntity> list = this.getPage().intersectsByType(entity, null, ChunkBlock.class);
 		list.remove(this);
+		
 		removeShortChunks(nWordsMinimum, list);
 		removeLowDensity(0.5, list);
 
-		/*
-		 * margin[0] = (int) marginRect.minX; margin[1] = (int) marginRect.minY;
-		 * margin[2] = (int) marginRect.maxX; margin[3] = (int) marginRect.maxY;
-		 */
-		int[] margins = this.getPage().getMargin();
-
 		while (list.size() == 0 &&
-				entity.getX1() >= margins[0] - 2 && 
-				entity.getY1() >= margins[1] - 2 && 
-				entity.getX2() <= margins[2] + 2 && 
-				entity.getY2() <= margins[3] + 2) {
+				entity.getX1() >= frame_left - 2 && 
+				entity.getY1() >= frame_top - 2 && 
+				entity.getX2() <= frame_right + 2 && 
+				entity.getY2() <= frame_bottom + 2) {
 
 			x += dx;
 			y += dy;
@@ -439,7 +442,6 @@ public class RTChunkBlock extends RTSpatialEntity implements ChunkBlock {
 			
 			removeShortChunks(nWordsMinimum, list);
 			removeLowDensity(0.5, list);
-
 
 			System.out.println(x + "," + y + "," + (x + w) + "," + (y + h));
 

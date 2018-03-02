@@ -1,35 +1,19 @@
 package edu.isi.bmkeg.lapdf.bin;
 
-import java.awt.Image;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
+import java.util.ListIterator;
 import java.util.regex.Pattern;
-
-import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.ghost4j.document.PDFDocument;
-import org.ghost4j.renderer.SimpleRenderer;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import edu.isi.bmkeg.lapdf.controller.LapdfEngine;
-import edu.isi.bmkeg.lapdf.model.ChunkBlock;
-import edu.isi.bmkeg.lapdf.model.LapdfDirection;
-import edu.isi.bmkeg.lapdf.model.LapdfDocument;
-import edu.isi.bmkeg.lapdf.model.RTree.RTChunkBlock;
-import edu.isi.bmkeg.lapdf.model.spatial.SpatialEntity;
 
 /**
  * This script runs through the digital library and extracts all fragments for a
@@ -75,8 +59,13 @@ public class ExtractFigureImagesFromDirectory {
 			
 			@SuppressWarnings("unchecked")
 			Iterator<File> it = FileUtils.iterateFiles(options.pdfDir, fileTypes, true);
-			while( it.hasNext() ) {
-				File pdf = it.next();
+			List<File> files = new ArrayList<File>();
+			while( it.hasNext() ) 
+				files.add(it.next());
+				
+			ListIterator<File> li = files.listIterator(files.size());
+			while(li.hasPrevious()) {
+				File pdf = li.previous();
 				
 				String newPath = pdf.getPath().replaceAll(
 						options.pdfDir.getPath(),
@@ -91,21 +80,8 @@ public class ExtractFigureImagesFromDirectory {
 				}
 				newDir.mkdirs();
 				
-				try {
-					Map<String, BufferedImage> imageList = eng.extractFiguresFromArticle(pdf);
-					
-					List<String> keys = new ArrayList<String>(imageList.keySet());
-					Collections.sort(keys);
-					for(String name : keys) {
-
-						BufferedImage img = imageList.get(name);
-						File outputfile = new File(newPath + "/" + stem + "_fig_" + name + ".png");
-						ImageIO.write(img, "png", outputfile);
-
-						logger.info("Extracting image to " + outputfile.getPath());
-						
-					}
-					
+				try {					
+					eng.extractFiguresFromArticle(pdf, newDir, stem);					
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
