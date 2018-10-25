@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+
 import edu.isi.bmkeg.lapdf.extraction.exceptions.InvalidPopularSpaceValueException;
 import edu.isi.bmkeg.lapdf.model.RTree.RTSpatialEntity;
 import edu.isi.bmkeg.lapdf.model.ordering.SpatialOrdering;
@@ -33,6 +35,7 @@ import edu.isi.bmkeg.utils.IntegerFrequencyCounter;
 public class LapdfDocument implements Serializable {
 
 	private File pdfFile;
+	//private PDDocument pdDocument;
 	
 	private ArrayList<PageBlock> pageList;
 	
@@ -62,6 +65,13 @@ public class LapdfDocument implements Serializable {
 		this.setAvgHeightFrequencyCounter(new IntegerFrequencyCounter(1));
 		this.setFontFrequencyCounter(new FrequencyCounter());
 	}
+	
+	//Implement soon
+	/*public LapdfDocument(PDDocument pdDocument) {
+		this.setPDDocument(pdDocument);
+		this.setAvgHeightFrequencyCounter(new IntegerFrequencyCounter(1));
+		this.setFontFrequencyCounter(new FrequencyCounter());
+	}*/
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -84,6 +94,14 @@ public class LapdfDocument implements Serializable {
 	public void setPdfFile(File pdfFile) {
 		this.pdfFile = pdfFile;
 	}
+	
+	/*public PDDocument getPDDocument() {
+		return pdDocument;
+	}*/
+	
+	/*public void setPDDocument(PDDocument pdDocument) {
+		this.pdDocument = pdDocument;
+	}*/
 
 	public IntegerFrequencyCounter getAvgHeightFrequencyCounter() {
 		return avgHeightFrequencyCounter;
@@ -443,7 +461,12 @@ public class LapdfDocument implements Serializable {
 
 		List<ChunkBlock> blocks = new ArrayList<ChunkBlock>(); 
 		
-		int n = this.getTotalNumberOfPages();
+		this.pageList.forEach(page -> {
+			blocks.addAll(page.getAllChunkBlocks(SpatialOrdering.ORIGINAL_MODE));
+		});
+		
+		//This was the old method, revert to this if you break something.
+		/*int n = this.getTotalNumberOfPages();
 		for (int i = 1; i <= n; i++)	{
 			PageBlock page = this.getPage(i);
 			
@@ -451,7 +474,7 @@ public class LapdfDocument implements Serializable {
 					SpatialOrdering.ORIGINAL_MODE
 					));
 			
-		}
+		}*/
 		
 		return blocks;
 

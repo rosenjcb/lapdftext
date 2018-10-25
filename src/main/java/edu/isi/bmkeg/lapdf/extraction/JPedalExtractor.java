@@ -325,7 +325,7 @@ public class JPedalExtractor implements Extractor {
 
 			pdfDecoder.flushObjectValues(true);
 			pdfDecoder.closePdfFile();
-			haveNext = false;
+			//haveNext = false; Commenting this out allows the final page to be processed but it is not known if this will break anything else. 
 
 		}
 

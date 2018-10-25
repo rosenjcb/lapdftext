@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
+import org.apache.pdfbox.pdmodel.PDDocument;
 
 import edu.isi.bmkeg.lapdf.extraction.JPedalExtractor;
 import edu.isi.bmkeg.lapdf.extraction.PDFBoxExtractor;
@@ -114,6 +115,13 @@ public class RuleBasedParser implements Parser {
 		}
 
 	}
+	
+	//TODO - Create parser for PDDocument
+	/*public LapdfDocument parsePdf(PDDocument pdDocument) {
+		LapdfDocument document = null;
+		//init(pdDocument);
+		return null;
+	}*/
 		
 	public LapdfDocument parsePdf(File file) 
 			throws Exception {
@@ -366,6 +374,11 @@ public class RuleBasedParser implements Parser {
 		pageList.clear();
 
 	}	
+	
+	private void init(PDDocument pdDocument) throws Exception {
+		//TODO
+		//pageExtractor.init(pdDocument);
+	}
 	
 	
 	/**
